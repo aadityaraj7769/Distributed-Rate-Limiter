@@ -1,9 +1,13 @@
 package com.aditya.distributedratelimiter.interceptor;
 
+import com.aditya.distributedratelimiter.constants.HeaderConstants;
+import com.aditya.distributedratelimiter.model.RateLimitResult;
 import com.aditya.distributedratelimiter.service.RateLimiterService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -11,8 +15,12 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class RateLimiterInterceptor implements HandlerInterceptor {
 
-  @Autowired
-  private RateLimiterService rateLimiterService;
+  private final RateLimiterService rateLimiterService;
+  private static final Logger _log = LoggerFactory.getLogger(RateLimiterInterceptor.class);
+
+  public RateLimiterInterceptor(RateLimiterService rateLimiterService) {
+    this.rateLimiterService = rateLimiterService;
+  }
 
   @Override
   public boolean preHandle(
@@ -21,19 +29,34 @@ public class RateLimiterInterceptor implements HandlerInterceptor {
       Object handler
   ) throws Exception {
 
-    String userId = request.getHeader("X-User-Id");
+    String userId = request.getHeader(HeaderConstants.USER_ID_HEADER);
 
-    if(userId == null || userId.isEmpty()) {
-      response.setStatus(400);
+    if(userId == null || userId.isBlank()) {
+      response.setStatus(HttpStatus.BAD_REQUEST.value());
       response.getWriter().write("Missing X-User-Id header");
       return false;
     }
 
-    boolean allowed = rateLimiterService.allowRequest(userId);
+    RateLimitResult result = rateLimiterService.validateRequest(userId);
 
-    if(!allowed) {
-      response.setStatus(429);
-      response.getWriter().write("Too Many Requests");
+    if(!result.isAllowed()) {
+      _log.warn("Rate limit exceeded for user: {}", userId);
+      response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+      response.setContentType(HeaderConstants.APPLICATION_JSON);
+      response.setHeader(
+          "Retry-After",
+          String.valueOf(result.getRetryAfterSeconds())
+      );
+      response.setHeader(
+          "X-RateLimit-Limit",
+          String.valueOf(rateLimiterService.getMaxRequests())
+      );
+
+      response.setHeader(
+          "X-RateLimit-Remaining",
+          String.valueOf(result.getRemainingRequests())
+      );
+      response.getWriter().write(RateLimitResult.TOO_MANY_REQUESTS_JSON);
       return false;
     }
 
