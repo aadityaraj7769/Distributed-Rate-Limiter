@@ -20,4 +20,9 @@ public class InMemoryRateLimitStore implements RateLimitStore {
   public void save(String userId, UserRequestData data) {
     store.put(userId, data);
   }
+
+  @Override
+  public void clear() {
+    store.clear();
+  }
 }

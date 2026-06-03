@@ -3,10 +3,12 @@ package com.aditya.distributedratelimiter.interceptor;
 import com.aditya.distributedratelimiter.constants.HeaderConstants;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
 import com.aditya.distributedratelimiter.service.RateLimiterService;
+import com.aditya.distributedratelimiter.strategy.RateLimitingStrategy;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -15,11 +17,18 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class RateLimiterInterceptor implements HandlerInterceptor {
 
-  private final RateLimiterService rateLimiterService;
   private static final Logger _log = LoggerFactory.getLogger(RateLimiterInterceptor.class);
 
-  public RateLimiterInterceptor(RateLimiterService rateLimiterService) {
+  @Value("${rate.limit.max-requests}")
+  private int maxRequests ;
+
+  private final RateLimiterService rateLimiterService;
+  private final RateLimitingStrategy rateLimitingStrategy;
+
+
+  public RateLimiterInterceptor(RateLimiterService rateLimiterService, RateLimitingStrategy rateLimitingStrategy) {
     this.rateLimiterService = rateLimiterService;
+    this.rateLimitingStrategy = rateLimitingStrategy;
   }
 
   @Override
@@ -49,14 +58,14 @@ public class RateLimiterInterceptor implements HandlerInterceptor {
       );
       response.setHeader(
           "X-RateLimit-Limit",
-          String.valueOf(rateLimiterService.getMaxRequests())
+          String.valueOf(maxRequests)
       );
 
       response.setHeader(
           "X-RateLimit-Remaining",
           String.valueOf(result.getRemainingRequests())
       );
-      response.getWriter().write(RateLimitResult.TOO_MANY_REQUESTS_JSON);
+      response.getWriter().write(result.toTooManyRequestsJson());
       return false;
     }
 

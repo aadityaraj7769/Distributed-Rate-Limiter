@@ -7,4 +7,6 @@ public interface RateLimitStore {
   UserRequestData getUserRequestData(String userId);
 
   void save(String userId, UserRequestData data);
+
+  void clear();
 }
