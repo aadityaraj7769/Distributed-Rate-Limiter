@@ -3,7 +3,6 @@ package com.aditya.distributedratelimiter.interceptor;
 import com.aditya.distributedratelimiter.constants.HeaderConstants;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
 import com.aditya.distributedratelimiter.service.RateLimiterService;
-import com.aditya.distributedratelimiter.strategy.RateLimitingStrategy;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -23,12 +22,10 @@ public class RateLimiterInterceptor implements HandlerInterceptor {
   private int maxRequests ;
 
   private final RateLimiterService rateLimiterService;
-  private final RateLimitingStrategy rateLimitingStrategy;
 
 
-  public RateLimiterInterceptor(RateLimiterService rateLimiterService, RateLimitingStrategy rateLimitingStrategy) {
+  public RateLimiterInterceptor(RateLimiterService rateLimiterService) {
     this.rateLimiterService = rateLimiterService;
-    this.rateLimitingStrategy = rateLimitingStrategy;
   }
 
   @Override

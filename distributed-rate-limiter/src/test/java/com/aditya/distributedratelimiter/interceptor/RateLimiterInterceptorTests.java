@@ -3,7 +3,6 @@ package com.aditya.distributedratelimiter.interceptor;
 import com.aditya.distributedratelimiter.constants.HeaderConstants;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
 import com.aditya.distributedratelimiter.service.RateLimiterService;
-import com.aditya.distributedratelimiter.strategy.RateLimitingStrategy;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,9 +22,6 @@ public class RateLimiterInterceptorTests {
   private RateLimiterService rateLimiterService;
 
   @Mock
-  private RateLimitingStrategy rateLimitingStrategy;
-
-  @Mock
   private HttpServletRequest request;
 
   @Mock
@@ -35,7 +31,7 @@ public class RateLimiterInterceptorTests {
 
   @BeforeEach
   void setUp() {
-    rateLimiterInterceptor = new RateLimiterInterceptor(rateLimiterService, rateLimitingStrategy);
+    rateLimiterInterceptor = new RateLimiterInterceptor(rateLimiterService);
   }
 
   @Test

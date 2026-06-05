@@ -15,16 +15,19 @@ public class FixedWindowStrategy implements RateLimitingStrategy{
 
   private static final Logger _log = LoggerFactory.getLogger(RateLimiterService.class);
 
-  @Value("${rate.limit.max-requests}")
-  private int maxRequests ; // Max requests per window
+  private final int maxRequests ; // Max requests per window
 
-  @Value("${rate.limit.window-size-ms}")
-  private long windowSize; // 1 minute in milliseconds
+  private final long windowSize; // 1 minute in milliseconds
 
   private final RateLimitStore rateLimitStore;
 
-    public FixedWindowStrategy(RateLimitStore rateLimitStore) {
-        this.rateLimitStore = rateLimitStore;
+    public FixedWindowStrategy(
+        RateLimitStore rateLimitStore,
+        @Value("${rate.limit.max-requests}") int maxRequests,
+        @Value("${rate.limit.window-size-ms}") long windowSizeSeconds) {
+      this.windowSize = windowSizeSeconds * 1000;
+      this.maxRequests = maxRequests;
+      this.rateLimitStore = rateLimitStore;
     }
 
   public  int getMaxRequests() {
@@ -32,7 +35,7 @@ public class FixedWindowStrategy implements RateLimitingStrategy{
   }
 
     @Override
-    public RateLimitResult validate(String userId) {
+    public synchronized RateLimitResult validate(String userId) {
       long currentTime = System.currentTimeMillis();
       UserRequestData data = rateLimitStore.getUserRequestData(userId);
 
