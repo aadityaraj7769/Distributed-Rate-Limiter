@@ -1,6 +1,7 @@
 package com.aditya.distributedratelimiter;
 
 import com.aditya.distributedratelimiter.store.RateLimitStore;
+import com.aditya.distributedratelimiter.strategy.RateLimitingStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,9 +23,13 @@ public class RateLimiterIntegrationTests {
   @Autowired
   private RateLimitStore rateLimitStore;
 
+  @Autowired
+  private RateLimitingStrategy rateLimitingStrategy;
+
   @BeforeEach
   void setUp() {
     rateLimitStore.clear();
+    rateLimitingStrategy.clear();
   }
 
   @Test

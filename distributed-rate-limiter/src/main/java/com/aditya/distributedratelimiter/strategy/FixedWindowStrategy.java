@@ -7,10 +7,12 @@ import com.aditya.distributedratelimiter.store.RateLimitStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 
 @Component
+@ConditionalOnProperty(name = "rate.limiter.strategy", havingValue = "fixed-window", matchIfMissing = true)
 public class FixedWindowStrategy implements RateLimitingStrategy{
 
   private static final Logger _log = LoggerFactory.getLogger(RateLimiterService.class);
@@ -24,7 +26,7 @@ public class FixedWindowStrategy implements RateLimitingStrategy{
     public FixedWindowStrategy(
         RateLimitStore rateLimitStore,
         @Value("${rate.limit.max-requests}") int maxRequests,
-        @Value("${rate.limit.window-size-ms}") long windowSizeSeconds) {
+        @Value("${rate.limit.window-size-sec}") long windowSizeSeconds) {
       this.windowSize = windowSizeSeconds * 1000;
       this.maxRequests = maxRequests;
       this.rateLimitStore = rateLimitStore;
@@ -62,5 +64,10 @@ public class FixedWindowStrategy implements RateLimitingStrategy{
           Math.max(0, maxRequests - data.getRequestCount()),
           (windowSize - (currentTime - data.getWindowStart())) / 1000
       );
+    }
+
+    @Override
+    public void clear() {
+      rateLimitStore.clear();
     }
 }
