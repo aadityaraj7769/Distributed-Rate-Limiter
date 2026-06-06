@@ -1,10 +1,12 @@
 package com.aditya.distributedratelimiter.interceptor;
 
+import com.aditya.distributedratelimiter.config.RateLimitProperties;
 import com.aditya.distributedratelimiter.constants.HeaderConstants;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
 import com.aditya.distributedratelimiter.service.RateLimiterService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +33,12 @@ public class RateLimiterInterceptorTests {
 
   @BeforeEach
   void setUp() {
-    rateLimiterInterceptor = new RateLimiterInterceptor(rateLimiterService);
+    RateLimitProperties properties = new RateLimitProperties(
+        5,
+        Duration.ofSeconds(60),
+        RateLimitProperties.Strategy.FIXED_WINDOW
+    );
+    rateLimiterInterceptor = new RateLimiterInterceptor(rateLimiterService, properties);
   }
 
   @Test

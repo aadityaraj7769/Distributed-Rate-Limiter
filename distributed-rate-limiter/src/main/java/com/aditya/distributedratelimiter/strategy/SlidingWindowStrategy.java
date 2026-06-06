@@ -1,55 +1,54 @@
 package com.aditya.distributedratelimiter.strategy;
 
+import com.aditya.distributedratelimiter.config.RateLimitProperties;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
 import com.aditya.distributedratelimiter.store.RedisSlidingWindowRateLimitStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 
 @Component
-@ConditionalOnProperty(name = "rate.limiter.strategy", havingValue = "redis-sliding-window")
+@ConditionalOnProperty(name = "rate-limit.strategy", havingValue = "redis-sliding-window")
 public class SlidingWindowStrategy implements RateLimitingStrategy {
 
-  Logger _log = LoggerFactory.getLogger(SlidingWindowStrategy.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SlidingWindowStrategy.class);
 
-  private final int maxRequests; // Max requests per window
-  private final long windowSize; // Window size in seconds
+  private final RateLimitProperties properties;
   private final RedisSlidingWindowRateLimitStore redisStore;
 
   public SlidingWindowStrategy(
       RedisSlidingWindowRateLimitStore redisStore,
-      @Value("${rate.limit.max-requests}") int maxRequests,
-      @Value("${rate.limit.window-size-sec}") long windowSizeSeconds) {
+      RateLimitProperties properties) {
     this.redisStore = redisStore;
-    this.maxRequests = maxRequests;
-    this.windowSize = windowSizeSeconds;
+    this.properties = properties;
   }
 
   @Override
   public RateLimitResult validate(String userId) {
-    _log.info("Validating request for user: {}", userId);
+    LOG.debug("Validating request for user: {}", userId);
     long now = System.currentTimeMillis();
-    long windowSizeMs = windowSize * 1000L; // Convert seconds to milliseconds
+    long windowSizeMs = properties.windowSizeMillis();
+    long windowSizeSec = properties.windowSizeSeconds();
+    int maxRequests = properties.maxRequests();
 
-    long count = redisStore.checkAndAdd(userId, windowSize, maxRequests);
+    long count = redisStore.checkAndAdd(userId, windowSizeSec, maxRequests);
 
     if (count == RedisSlidingWindowRateLimitStore.DENIED) {
       Long oldest = redisStore.getOldestTimestamp(userId);
-      long retryAfterSeconds = windowSize;
-      if(oldest != null) {
+      long retryAfterSeconds = windowSizeSec;
+      if (oldest != null) {
         long retryAfterMs = (oldest + windowSizeMs) - now;
-        retryAfterSeconds = Math.max(1, (long) Math.ceil(retryAfterMs / 1000.0)); // Convert ms to seconds, round up
+        retryAfterSeconds = Math.max(1, (long) Math.ceil(retryAfterMs / 1000.0));
       }
 
-      _log.info("User: {} DENIED. Count: {}, retryAfter: {}s", userId, count, retryAfterSeconds);
+      LOG.info("User: {} DENIED. retryAfter: {}s", userId, retryAfterSeconds);
       return new RateLimitResult(false, 0, retryAfterSeconds);
     }
 
     long remaining = Math.max(0, maxRequests - count);
-    _log.info("User: {} ALLOWED, Count: {}, Remaining: {}", userId, count, remaining);
+    LOG.debug("User: {} ALLOWED, Count: {}, Remaining: {}", userId, count, remaining);
     return new RateLimitResult(true, (int) remaining, 0);
   }
 

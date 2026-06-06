@@ -1,5 +1,6 @@
 package com.aditya.distributedratelimiter.interceptor;
 
+import com.aditya.distributedratelimiter.config.RateLimitProperties;
 import com.aditya.distributedratelimiter.constants.HeaderConstants;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
 import com.aditya.distributedratelimiter.service.RateLimiterService;
@@ -7,7 +8,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -16,16 +16,16 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class RateLimiterInterceptor implements HandlerInterceptor {
 
-  private static final Logger _log = LoggerFactory.getLogger(RateLimiterInterceptor.class);
-
-  @Value("${rate.limit.max-requests}")
-  private int maxRequests ;
+  private static final Logger LOG = LoggerFactory.getLogger(RateLimiterInterceptor.class);
 
   private final RateLimiterService rateLimiterService;
+  private final RateLimitProperties properties;
 
-
-  public RateLimiterInterceptor(RateLimiterService rateLimiterService) {
+  public RateLimiterInterceptor(
+      RateLimiterService rateLimiterService,
+      RateLimitProperties properties) {
     this.rateLimiterService = rateLimiterService;
+    this.properties = properties;
   }
 
   @Override
@@ -45,8 +45,8 @@ public class RateLimiterInterceptor implements HandlerInterceptor {
 
     RateLimitResult result = rateLimiterService.validateRequest(userId);
 
-    if(!result.isAllowed()) {
-      _log.warn("Rate limit exceeded for user: {}", userId);
+    if (!result.isAllowed()) {
+      LOG.warn("Rate limit exceeded for user: {}", userId);
       response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
       response.setContentType(HeaderConstants.APPLICATION_JSON);
       response.setHeader(
@@ -55,7 +55,7 @@ public class RateLimiterInterceptor implements HandlerInterceptor {
       );
       response.setHeader(
           "X-RateLimit-Limit",
-          String.valueOf(maxRequests)
+          String.valueOf(properties.maxRequests())
       );
 
       response.setHeader(
