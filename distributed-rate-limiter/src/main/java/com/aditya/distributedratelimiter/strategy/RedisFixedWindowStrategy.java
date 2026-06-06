@@ -16,7 +16,6 @@ public class RedisFixedWindowStrategy implements RateLimitingStrategy {
 
   private static final Logger _log = LoggerFactory.getLogger(RedisFixedWindowStrategy.class);
 
-
   private final int maxRequests;
   private final long windowSize;
 
@@ -38,6 +37,7 @@ public class RedisFixedWindowStrategy implements RateLimitingStrategy {
     boolean allowed = count <= maxRequests;
     long remaining = Math.max(0, maxRequests - count);
 
+    _log.info("User: {}, Count: {}, Allowed: {}, Remaining: {}", userId, count, allowed, remaining);
     return new RateLimitResult(allowed, (int) remaining, windowSize);
   }
 
