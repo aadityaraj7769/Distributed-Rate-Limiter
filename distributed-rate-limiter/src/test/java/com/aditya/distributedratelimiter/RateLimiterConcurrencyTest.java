@@ -62,10 +62,7 @@ public class RateLimiterConcurrencyTest {
 
     System.out.println("Allowed requests = " + allowed);
 
-    assertTrue(
-        allowed <= 5,
-        "Allowed requests exceeded configured limit: " + allowed
-    );
+    assertEquals(5,  allowed);
 
     executor.shutdown();
   }
