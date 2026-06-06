@@ -13,15 +13,15 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnProperty(name = "rate-limit.strategy", havingValue = "redis-sliding-window")
-public class SlidingWindowStrategy implements RateLimitingStrategy {
+public class RedisSlidingWindowStrategy implements RateLimitingStrategy {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SlidingWindowStrategy.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RedisSlidingWindowStrategy.class);
 
   private final RateLimitProperties properties;
   private final RedisSlidingWindowRateLimitStore redisStore;
   private final Clock clock;
 
-  public SlidingWindowStrategy(
+  public RedisSlidingWindowStrategy(
       RedisSlidingWindowRateLimitStore redisStore,
       RateLimitProperties properties,
       Clock clock) {
