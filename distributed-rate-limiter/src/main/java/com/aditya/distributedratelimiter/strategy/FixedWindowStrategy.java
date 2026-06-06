@@ -4,6 +4,7 @@ import com.aditya.distributedratelimiter.config.RateLimitProperties;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
 import com.aditya.distributedratelimiter.model.UserRequestData;
 import com.aditya.distributedratelimiter.store.RateLimitStore;
+import java.time.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,12 +19,15 @@ public class FixedWindowStrategy implements RateLimitingStrategy {
 
   private final RateLimitProperties properties;
   private final RateLimitStore rateLimitStore;
+  private final Clock clock;
 
   public FixedWindowStrategy(
       RateLimitStore rateLimitStore,
-      RateLimitProperties properties) {
+      RateLimitProperties properties,
+      Clock clock) {
     this.rateLimitStore = rateLimitStore;
     this.properties = properties;
+    this.clock = clock;
   }
 
   public int getMaxRequests() {
@@ -32,7 +36,7 @@ public class FixedWindowStrategy implements RateLimitingStrategy {
 
   @Override
   public synchronized RateLimitResult validate(String userId) {
-    long currentTime = System.currentTimeMillis();
+    long currentTime = clock.millis();
     long windowSizeMs = properties.windowSizeMillis();
     int maxRequests = properties.maxRequests();
     UserRequestData data = rateLimitStore.getUserRequestData(userId);

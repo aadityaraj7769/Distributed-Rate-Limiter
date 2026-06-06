@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RedisSlidingWindowRateLimitStore {
+
   private static final String KEY_PREFIX = "rate_limit:";
 
   private final StringRedisTemplate redisTemplate;
@@ -18,10 +19,12 @@ public class RedisSlidingWindowRateLimitStore {
     this.redisTemplate = redisTemplate;
   }
 
-  public long checkAndAdd(String userId, long windowSize, int maxRequests) {
+  /**
+   * Checks the sliding-window count and adds the current timestamp if the request is allowed.
+   */
+  public CheckResult checkAndAdd(String userId, long nowMs, long windowSize, int maxRequests) {
     String key = KEY_PREFIX + userId;
-    long now = System.currentTimeMillis();
-    long windowStart = now - windowSize * 1000L;
+    long windowStart = nowMs - windowSize * 1000L;
 
     redisTemplate.opsForZSet().removeRangeByScore(key, 0, windowStart);
 
@@ -29,31 +32,30 @@ public class RedisSlidingWindowRateLimitStore {
     long count = current == null ? 0L : current;
 
     if (count >= maxRequests) {
-      return DENIED;
+      return CheckResult.denied(count, oldestTimestamp(key));
     }
 
-    String member = now + ":" + UUID.randomUUID();
-    redisTemplate.opsForZSet().add(key, member, now);
+    String member = nowMs + ":" + UUID.randomUUID();
+    redisTemplate.opsForZSet().add(key, member, nowMs);
     redisTemplate.expire(key, windowSize, TimeUnit.SECONDS);
 
-    return count + 1;
+    return CheckResult.allowed(count + 1, oldestTimestamp(key));
   }
 
-  public static final long DENIED = -1L;
+  public void clear() {
+    Set<String> keys = redisTemplate.keys(KEY_PREFIX + "*");
+    if (keys != null && !keys.isEmpty()) {
+      redisTemplate.delete(keys);
+    }
+  }
 
-  public Long getOldestTimestamp(String userId) {
-    String key = KEY_PREFIX + userId;
+  private Long oldestTimestamp(String key) {
     Set<ZSetOperations.TypedTuple<String>> oldest =
         redisTemplate.opsForZSet().rangeWithScores(key, 0, 0);
     if (oldest == null || oldest.isEmpty()) {
       return null;
     }
-
     Double score = oldest.iterator().next().getScore();
     return score == null ? null : score.longValue();
-  }
-
-  public void clear() {
-    redisTemplate.delete(redisTemplate.keys(KEY_PREFIX + "*"));
   }
 }
