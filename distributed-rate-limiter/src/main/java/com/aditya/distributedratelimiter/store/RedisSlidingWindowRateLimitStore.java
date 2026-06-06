@@ -18,13 +18,6 @@ public class RedisSlidingWindowRateLimitStore {
     this.redisTemplate = redisTemplate;
   }
 
-  /**
-   * Atomically (best-effort, see TODO below) checks the sliding-window count and adds the current
-   * timestamp if allowed.
-   *
-   * @return DENIED ({@value #DENIED}) when the request is rejected and the window was NOT modified;
-   *         otherwise the post-add count, in the range [1, maxRequests].
-   */
   public long checkAndAdd(String userId, long windowSize, int maxRequests) {
     String key = KEY_PREFIX + userId;
     long now = System.currentTimeMillis();
@@ -61,7 +54,6 @@ public class RedisSlidingWindowRateLimitStore {
   }
 
   public void clear() {
-    // Implement logic to clear any stored data if necessary
     redisTemplate.delete(redisTemplate.keys(KEY_PREFIX + "*"));
   }
 }
