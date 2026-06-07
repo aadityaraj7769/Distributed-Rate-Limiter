@@ -3,6 +3,7 @@ package com.aditya.distributedratelimiter.strategy;
 import com.aditya.distributedratelimiter.config.RateLimitProperties;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
 import com.aditya.distributedratelimiter.model.UserRequestData;
+import com.aditya.distributedratelimiter.semantics.MetricsSemantics;
 import com.aditya.distributedratelimiter.store.RateLimitStore;
 import java.time.Clock;
 import org.slf4j.Logger;
@@ -69,5 +70,10 @@ public class FixedWindowStrategy implements RateLimitingStrategy {
   @Override
   public void clear() {
     rateLimitStore.clear();
+  }
+
+  @Override
+  public String getStrategyName() {
+    return MetricsSemantics.STRATEGY.FIXED_WINDOW;
   }
 }

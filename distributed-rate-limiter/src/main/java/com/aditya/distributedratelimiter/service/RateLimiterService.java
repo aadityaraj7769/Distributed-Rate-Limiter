@@ -18,4 +18,8 @@ public class RateLimiterService {
     return rateLimitingStrategy.validate(userId);
   }
 
+  public String getStrategyName() {
+    return rateLimitingStrategy.getStrategyName();
+  }
+
 }

@@ -7,4 +7,6 @@ public interface RateLimitingStrategy {
   RateLimitResult validate(String userId);
 
   void clear();
+
+  String getStrategyName();
 }

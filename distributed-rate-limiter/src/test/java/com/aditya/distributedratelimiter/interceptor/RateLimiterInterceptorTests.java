@@ -3,6 +3,7 @@ package com.aditya.distributedratelimiter.interceptor;
 import com.aditya.distributedratelimiter.config.RateLimitProperties;
 import com.aditya.distributedratelimiter.constants.HeaderConstants;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
+import com.aditya.distributedratelimiter.service.MetricsService;
 import com.aditya.distributedratelimiter.service.RateLimiterService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,6 +27,9 @@ public class RateLimiterInterceptorTests {
   private RateLimiterService rateLimiterService;
 
   @Mock
+  private MetricsService metricsService;
+
+  @Mock
   private HttpServletRequest request;
 
   @Mock
@@ -43,7 +47,7 @@ public class RateLimiterInterceptorTests {
         Duration.ofSeconds(60),
         RateLimitProperties.Strategy.FIXED_WINDOW
     );
-    rateLimiterInterceptor = new RateLimiterInterceptor(rateLimiterService, properties);
+    rateLimiterInterceptor = new RateLimiterInterceptor(rateLimiterService, properties, metricsService);
 
     responseBody = new StringWriter();
     responseWriter = new PrintWriter(responseBody);

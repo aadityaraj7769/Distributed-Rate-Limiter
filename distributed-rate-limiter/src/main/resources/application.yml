@@ -3,3 +3,18 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+
+  endpoint:
+    health:
+      show-details: always
+
+  prometheus:
+    metrics:
+        export:
+

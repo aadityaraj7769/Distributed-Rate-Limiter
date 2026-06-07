@@ -3,6 +3,7 @@ package com.aditya.distributedratelimiter.interceptor;
 import com.aditya.distributedratelimiter.config.RateLimitProperties;
 import com.aditya.distributedratelimiter.constants.HeaderConstants;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
+import com.aditya.distributedratelimiter.service.MetricsService;
 import com.aditya.distributedratelimiter.service.RateLimiterService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,12 +21,16 @@ public class RateLimiterInterceptor implements HandlerInterceptor {
 
   private final RateLimiterService rateLimiterService;
   private final RateLimitProperties properties;
+  private final MetricsService metricsService;
 
   public RateLimiterInterceptor(
       RateLimiterService rateLimiterService,
-      RateLimitProperties properties) {
+      RateLimitProperties properties,
+      MetricsService metricsService
+  ) {
     this.rateLimiterService = rateLimiterService;
     this.properties = properties;
+    this.metricsService = metricsService;
   }
 
   @Override
@@ -44,6 +49,7 @@ public class RateLimiterInterceptor implements HandlerInterceptor {
     }
 
     RateLimitResult result = rateLimiterService.validateRequest(userId);
+    String strategyName = rateLimiterService.getStrategyName();
 
     if (!result.isAllowed()) {
       LOG.warn("Rate limit exceeded for user: {}", userId);
@@ -63,9 +69,11 @@ public class RateLimiterInterceptor implements HandlerInterceptor {
           String.valueOf(result.getRemainingRequests())
       );
       response.getWriter().write(result.toTooManyRequestsJson());
+      metricsService.recordRejectedRequest(strategyName);
       return false;
     }
 
+    metricsService.recordAllowedRequest(strategyName);
     return true;
 
   }

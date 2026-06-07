@@ -1,5 +1,7 @@
 package com.aditya.distributedratelimiter.store;
 
+import com.aditya.distributedratelimiter.service.MetricsService;
+import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -18,12 +20,15 @@ public class RedisSlidingWindowRateLimitStore {
   private final StringRedisTemplate redisTemplate;
   @SuppressWarnings("rawtypes")
   private final RedisScript<List> slidingWindowScript;
+  private final MetricsService metricsService;
 
   public RedisSlidingWindowRateLimitStore(
       StringRedisTemplate redisTemplate,
-      @SuppressWarnings("rawtypes") RedisScript<List> slidingWindowScript) {
+      @SuppressWarnings("rawtypes") RedisScript<List> slidingWindowScript,
+      MetricsService metricsService) {
     this.redisTemplate = redisTemplate;
     this.slidingWindowScript = slidingWindowScript;
+    this.metricsService = metricsService;
   }
 
   /**
@@ -31,7 +36,7 @@ public class RedisSlidingWindowRateLimitStore {
    * The entire operation runs as a single Lua script inside Redis, eliminating the
    * check-then-act race that exists with separate ZCARD/ZADD calls.
    */
-  public CheckResult checkAndAdd(String userId, long nowMs, long windowSize, int maxRequests) {
+  public CheckResult checkAndAdd(String userId, long nowMs, long windowSize, int maxRequests, Clock clock) {
     String key = KEY_PREFIX + userId;
     long windowSizeMs = windowSize * 1000L;
     String member = nowMs + ":" + UUID.randomUUID();
@@ -45,6 +50,9 @@ public class RedisSlidingWindowRateLimitStore {
         Integer.toString(maxRequests),
         Long.toString(windowSize),
         member);
+
+    long duration = clock.millis() - nowMs;
+    metricsService.recordRedisLatency(duration);
 
     long allowed = result.get(0);
     long count = result.get(1);

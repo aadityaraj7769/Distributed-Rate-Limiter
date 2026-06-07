@@ -2,6 +2,7 @@ package com.aditya.distributedratelimiter.strategy;
 
 import com.aditya.distributedratelimiter.config.RateLimitProperties;
 import com.aditya.distributedratelimiter.model.RateLimitResult;
+import com.aditya.distributedratelimiter.semantics.MetricsSemantics;
 import com.aditya.distributedratelimiter.store.CheckResult;
 import com.aditya.distributedratelimiter.store.RedisSlidingWindowRateLimitStore;
 import java.time.Clock;
@@ -37,7 +38,7 @@ public class RedisSlidingWindowStrategy implements RateLimitingStrategy {
     long windowSizeMs = properties.windowSizeMillis();
     int maxRequests = properties.maxRequests();
 
-    CheckResult result = redisStore.checkAndAdd(userId, now, properties.windowSizeSeconds(), maxRequests);
+    CheckResult result = redisStore.checkAndAdd(userId, now, properties.windowSizeSeconds(), maxRequests, clock);
 
     if (!result.allowed()) {
       long retryAfterSeconds = computeRetryAfterSeconds(result, now, windowSizeMs);
@@ -61,5 +62,10 @@ public class RedisSlidingWindowStrategy implements RateLimitingStrategy {
   @Override
   public void clear() {
     redisStore.clear();
+  }
+
+  @Override
+  public String getStrategyName() {
+    return MetricsSemantics.STRATEGY.SLIDING_WINDOW;
   }
 }
