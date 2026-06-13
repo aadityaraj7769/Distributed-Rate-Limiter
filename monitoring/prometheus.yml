@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # OpenTelemetry SDK metrics exposed by PrometheusHttpServer (MetricsService counters/histograms).
+  - job_name: 'distributed-rate-limiter-otel'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          - 'host.docker.internal:9464'
+
+  # Spring Boot Actuator + Micrometer metrics (JVM, HTTP server, Redis, etc.).
+  - job_name: 'distributed-rate-limiter-actuator'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets:
+          - 'host.docker.internal:8080'
