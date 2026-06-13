@@ -41,6 +41,8 @@ public class RedisSlidingWindowRateLimitStore {
     long windowSizeMs = windowSize * 1000L;
     String member = nowMs + ":" + UUID.randomUUID();
 
+    long startNanos = System.nanoTime();
+
     @SuppressWarnings("unchecked")
     List<Long> result = redisTemplate.execute(
         slidingWindowScript,
@@ -51,8 +53,8 @@ public class RedisSlidingWindowRateLimitStore {
         Long.toString(windowSize),
         member);
 
-    long duration = clock.millis() - nowMs;
-    metricsService.recordRedisLatency(duration);
+    double durationMs = (System.nanoTime() - startNanos) / 1_000_000.0;
+    metricsService.recordRedisLatency(durationMs);
 
     long allowed = result.get(0);
     long count = result.get(1);
