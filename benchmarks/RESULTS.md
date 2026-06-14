@@ -34,6 +34,8 @@ The Redis p99 of ~5ms shows the sliding-window Lua script is well-optimized;
 total request p99 of 9.7ms means only ~5ms is spent outside Redis (Spring filters,
 serialization, networking).
 
+![Dashboard at peak](../docs/screenshots/02-dashboard-peak.png)
+
 ---
 
 ## Experiment 2 — Scaling Curve
@@ -69,6 +71,8 @@ Insights:
 - Redis p99 (Grafana): ~5ms at c=10, climbs to ~25ms at c=200 — Redis itself
   contributes increasing share of latency under contention.
 
+![Scaling curve — five distinct humps as concurrency steps from 10 → 400](../docs/screenshots/04-scaling-curve.png)
+
 ---
 
 ## Experiment 3 — Strategy Comparison
@@ -97,6 +101,8 @@ Trade-off summary (now measured):
   ~12% slower throughput, ~70% higher p99. Cost is justified when burst
   protection matters (e.g., expensive downstream calls, fairness SLAs).
 
+![Strategy comparison — fixed_window (yellow) vs sliding_window (green)](../docs/screenshots/05-strategy-comparison.png)
+
 ---
 
 ## Experiment 4 — Rejection Accuracy (Correctness)
@@ -123,16 +129,5 @@ the limiter showed ZERO leakage. This proves:
 - No false rejections (would have shown <300 allowed).
 - No false allows (would have shown >300 allowed).
 
----
+![Dashboard during rejection-heavy run — gauge pegged at 99.4% red](../docs/screenshots/03-dashboard-rejection.png)
 
-## Final Resume Numbers
-
-  Peak throughput (sliding window): 21,200 req/s (avg of 2 runs)
-  Peak throughput (fixed window):   23,561 req/s
-  p99 at peak (sliding):             9.0 ms
-  p99 at peak (fixed):               5.6 ms
-  Saturation knee:                   c=200 (p99 spikes 2x)
-  Faster strategy:                   fixed window (+12% throughput, -42% p99)
-  Limiter accuracy:                  100.00% (300 allowed vs 300 expected, zero deviation)
-  Bonus: identified + fixed observability gap (per-store instrumentation, ms->ns)
-  Bonus: identified + fixed histogram bucket coarseness (default OTel buckets too coarse for sub-ms Redis)
